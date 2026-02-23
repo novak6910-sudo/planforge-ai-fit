@@ -72,7 +72,7 @@ export default function HeroSection({ onGetStarted }: HeroSectionProps) {
           initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.3 }}
-          className="grid grid-cols-2 md:grid-cols-4 gap-4"
+          className="grid grid-cols-2 md:grid-cols-4 gap-6"
         >
           {features.map((f, i) => (
             <motion.div
@@ -80,10 +80,12 @@ export default function HeroSection({ onGetStarted }: HeroSectionProps) {
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.5 + i * 0.1 }}
-              className="glass rounded-xl p-4 flex flex-col items-center gap-2"
+              className="rounded-2xl p-6 flex flex-col items-center gap-3 bg-primary-foreground/10 backdrop-blur-lg border-2 border-primary-foreground/20 shadow-lg shadow-primary/20 hover:scale-105 hover:border-primary/60 transition-all duration-300"
             >
-              <f.icon className="w-6 h-6 text-glow-soft" />
-              <span className="text-sm font-medium text-primary-foreground/80">
+              <div className="w-12 h-12 rounded-xl bg-primary/30 flex items-center justify-center">
+                <f.icon className="w-7 h-7 text-primary-foreground" />
+              </div>
+              <span className="text-base font-semibold text-primary-foreground">
                 {f.label}
               </span>
             </motion.div>

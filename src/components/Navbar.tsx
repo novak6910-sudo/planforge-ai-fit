@@ -1,4 +1,4 @@
-import { Dumbbell, BarChart3, FileText, Crown, LogIn } from "lucide-react";
+import { Dumbbell, BarChart3, FileText, Crown, LogIn, Activity } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -15,6 +15,7 @@ export default function Navbar({ currentView, onNavigate, isPaid }: NavbarProps)
     { id: "home", label: "Home", icon: Dumbbell },
     { id: "plan", label: "My Plan", icon: FileText },
     { id: "progress", label: "Progress", icon: BarChart3 },
+    { id: "tracking", label: "Tracking", icon: Activity, route: "/tracking" },
   ];
 
   return (
@@ -32,7 +33,13 @@ export default function Navbar({ currentView, onNavigate, isPaid }: NavbarProps)
           {links.map((link) => (
             <button
               key={link.id}
-              onClick={() => onNavigate(link.id)}
+              onClick={() => {
+                if ((link as any).route) {
+                  navigate((link as any).route);
+                } else {
+                  onNavigate(link.id);
+                }
+              }}
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                 currentView === link.id
                   ? "bg-primary/10 text-primary"
