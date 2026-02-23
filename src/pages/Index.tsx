@@ -1,4 +1,5 @@
 import { useState, useCallback } from "react";
+import { useAuth } from "@/hooks/useAuth";
 import Navbar from "@/components/Navbar";
 import HeroSection from "@/components/HeroSection";
 import PlannerForm from "@/components/PlannerForm";
@@ -17,6 +18,7 @@ import { toast } from "@/hooks/use-toast";
 type View = "home" | "plan" | "workout" | "progress" | "upgrade";
 
 const Index = () => {
+  const { user } = useAuth();
   const [view, setView] = useState<View>("home");
   const [plan, setPlan] = useState<WorkoutPlan | null>(null);
   const [activeDay, setActiveDay] = useState<WorkoutDay | null>(null);
@@ -117,7 +119,7 @@ const Index = () => {
 
       {view === "home" && (
         <>
-          <HeroSection onGetStarted={scrollToPlanner} />
+          {!user && <HeroSection onGetStarted={scrollToPlanner} />}
           <PlannerForm onGenerate={handleGenerate} />
         </>
       )}
