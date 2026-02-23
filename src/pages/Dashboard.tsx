@@ -157,32 +157,32 @@ export default function Dashboard() {
 
         {/* Stats grid */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <Card>
-            <CardContent className="pt-6 text-center">
-              <Target className="w-8 h-8 text-primary mx-auto mb-2" />
-              <p className="text-2xl font-bold text-foreground">{totalWorkouts}</p>
-              <p className="text-xs text-muted-foreground">Total Workouts</p>
-            </CardContent>
-          </Card>
-          <Card>
+          <Card className="cursor-pointer hover:border-destructive/50 transition-colors" onClick={() => navigate("/analytics?tab=calories")}>
             <CardContent className="pt-6 text-center">
               <Flame className="w-8 h-8 text-destructive mx-auto mb-2" />
               <p className="text-2xl font-bold text-foreground">{todayCalories}</p>
-              <p className="text-xs text-muted-foreground">Calories Today</p>
+              <p className="text-xs text-muted-foreground">🔥 Calories Today</p>
             </CardContent>
           </Card>
-          <Card>
-            <CardContent className="pt-6 text-center">
-              <TrendingUp className="w-8 h-8 text-success mx-auto mb-2" />
-              <p className="text-2xl font-bold text-foreground">{profile?.workout_streak ?? 0}</p>
-              <p className="text-xs text-muted-foreground">Day Streak 🔥</p>
-            </CardContent>
-          </Card>
-          <Card>
+          <Card className="cursor-pointer hover:border-accent/50 transition-colors" onClick={() => navigate("/analytics?tab=water")}>
             <CardContent className="pt-6 text-center">
               <Droplets className="w-8 h-8 text-accent mx-auto mb-2" />
               <p className="text-2xl font-bold text-foreground">{profile?.water_streak ?? 0}</p>
-              <p className="text-xs text-muted-foreground">Water Streak 💧</p>
+              <p className="text-xs text-muted-foreground">💧 Water Streak</p>
+            </CardContent>
+          </Card>
+          <Card className="cursor-pointer hover:border-success/50 transition-colors" onClick={() => navigate("/analytics?tab=streak")}>
+            <CardContent className="pt-6 text-center">
+              <TrendingUp className="w-8 h-8 text-success mx-auto mb-2" />
+              <p className="text-2xl font-bold text-foreground">{profile?.workout_streak ?? 0}</p>
+              <p className="text-xs text-muted-foreground">📅 Day Streak</p>
+            </CardContent>
+          </Card>
+          <Card className="cursor-pointer hover:border-primary/50 transition-colors" onClick={() => navigate("/analytics?tab=workouts")}>
+            <CardContent className="pt-6 text-center">
+              <Target className="w-8 h-8 text-primary mx-auto mb-2" />
+              <p className="text-2xl font-bold text-foreground">{totalWorkouts}</p>
+              <p className="text-xs text-muted-foreground">🏋️ Total Workouts</p>
             </CardContent>
           </Card>
         </div>

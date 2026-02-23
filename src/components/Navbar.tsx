@@ -1,4 +1,4 @@
-import { Dumbbell, BarChart3, FileText, Crown, LogIn, Activity } from "lucide-react";
+import { Dumbbell, BarChart3, FileText, Crown, LogIn, Activity, TrendingUp } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -16,6 +16,7 @@ export default function Navbar({ currentView, onNavigate, isPaid }: NavbarProps)
     { id: "plan", label: "My Plan", icon: FileText },
     { id: "progress", label: "Progress", icon: BarChart3 },
     { id: "tracking", label: "Tracking", icon: Activity, route: "/tracking" },
+    { id: "analytics", label: "Analytics", icon: TrendingUp, route: "/analytics" },
   ];
 
   return (

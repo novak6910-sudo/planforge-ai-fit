@@ -9,7 +9,7 @@ import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Droplets, Flame, Apple, Plus, Trash2, Dumbbell,
-  Home, BarChart3, LogOut, Crown, X, Settings2,
+  Home, BarChart3, LogOut, X, Activity, Minus,
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import GoalEditor from "@/components/GoalEditor";
@@ -33,6 +33,14 @@ export default function Tracking() {
   const [foodForm, setFoodForm] = useState({ food_name: "", calories: "", protein_g: "", carbs_g: "", fat_g: "" });
   const [waterGoal, setWaterGoal] = useState(2500);
   const [calorieGoal, setCalorieGoal] = useState(2000);
+  const [customWater, setCustomWater] = useState("");
+  const [showCustomWater, setShowCustomWater] = useState(false);
+  const [customWaterRemove, setCustomWaterRemove] = useState("");
+  const [showCustomWaterRemove, setShowCustomWaterRemove] = useState(false);
+  const [customCalorie, setCustomCalorie] = useState("");
+  const [showCustomCalorie, setShowCustomCalorie] = useState(false);
+  const [customCalorieRemove, setCustomCalorieRemove] = useState("");
+  const [showCustomCalorieRemove, setShowCustomCalorieRemove] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) navigate("/auth", { replace: true });
@@ -75,10 +83,19 @@ export default function Tracking() {
   };
 
   const addWater = async (ml: number) => {
-    if (!user) return;
+    if (!user || ml <= 0) return;
     const { error } = await supabase.from("water_logs").insert({ user_id: user.id, amount_ml: ml });
     if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); return; }
     toast({ title: `+${ml}ml 💧` });
+    fetchAll();
+  };
+
+  const removeWater = async (ml: number) => {
+    if (!user || ml <= 0) return;
+    // Remove by adding a negative-amount log
+    const { error } = await supabase.from("water_logs").insert({ user_id: user.id, amount_ml: -ml });
+    if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); return; }
+    toast({ title: `-${ml}ml 💧` });
     fetchAll();
   };
 
@@ -114,6 +131,33 @@ export default function Tracking() {
   const todayCaloriesBurned = workoutLogs
     .filter((w) => new Date(w.logged_at) >= todayStart)
     .reduce((s, w) => s + w.calories_burned, 0);
+
+  // Manual calorie add/remove via food_logs (as "Manual adjustment")
+  const addManualCalories = async (amount: number) => {
+    if (!user || amount <= 0) return;
+    const { error } = await supabase.from("food_logs").insert({
+      user_id: user.id,
+      food_name: `Manual +${amount} kcal`,
+      calories: amount,
+      protein_g: 0, carbs_g: 0, fat_g: 0,
+    });
+    if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); return; }
+    toast({ title: `+${amount} kcal 🔥` });
+    fetchAll();
+  };
+
+  const removeManualCalories = async (amount: number) => {
+    if (!user || amount <= 0) return;
+    const { error } = await supabase.from("food_logs").insert({
+      user_id: user.id,
+      food_name: `Manual -${amount} kcal`,
+      calories: -amount,
+      protein_g: 0, carbs_g: 0, fat_g: 0,
+    });
+    if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); return; }
+    toast({ title: `-${amount} kcal 🔥` });
+    fetchAll();
+  };
 
   // Weekly chart data
   const weekDays = Array.from({ length: 7 }, (_, i) => {
@@ -151,7 +195,8 @@ export default function Tracking() {
           </div>
           <div className="flex items-center gap-1">
             <Button variant="ghost" size="sm" onClick={() => navigate("/dashboard")}><Home className="w-4 h-4" /></Button>
-            <Button variant="ghost" size="sm" onClick={() => navigate("/")}><BarChart3 className="w-4 h-4" /></Button>
+            <Button variant="ghost" size="sm" onClick={() => navigate("/analytics")}><BarChart3 className="w-4 h-4" /></Button>
+            <Button variant="ghost" size="sm" onClick={() => navigate("/")}><Activity className="w-4 h-4" /></Button>
             <Button variant="ghost" size="sm" onClick={() => { signOut(); navigate("/"); }}><LogOut className="w-4 h-4" /></Button>
           </div>
         </div>
@@ -178,23 +223,49 @@ export default function Tracking() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="text-center">
-                  <p className="text-4xl font-bold text-foreground">{todayWater}<span className="text-lg text-muted-foreground">ml</span></p>
+                  <p className="text-4xl font-bold text-foreground">{Math.max(0, todayWater)}<span className="text-lg text-muted-foreground">ml</span></p>
                   <p className="text-sm text-muted-foreground">of {waterGoal}ml goal</p>
                 </div>
                 <Progress value={waterPercent} className="h-4" />
-                <div className="flex flex-wrap gap-2 justify-center">
-                  <Button size="sm" variant="outline" onClick={() => addWater(250)}>+250ml</Button>
-                  <Button size="sm" variant="outline" onClick={() => addWater(500)}>+500ml</Button>
-                  <Button size="sm" variant="outline" onClick={() => addWater(750)}>+750ml</Button>
-                  <Button size="sm" variant="outline" onClick={() => addWater(1000)}>+1L</Button>
+
+                {/* Add buttons */}
+                <div>
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Add Water</p>
+                  <div className="flex flex-wrap gap-2">
+                    <Button size="sm" variant="outline" onClick={() => addWater(250)}><Plus className="w-3 h-3 mr-1" />250ml</Button>
+                    <Button size="sm" variant="outline" onClick={() => addWater(500)}><Plus className="w-3 h-3 mr-1" />500ml</Button>
+                    <Button size="sm" variant="outline" onClick={() => setShowCustomWater(!showCustomWater)}><Plus className="w-3 h-3 mr-1" />Custom</Button>
+                  </div>
+                  {showCustomWater && (
+                    <div className="flex gap-2 mt-2">
+                      <Input type="number" placeholder="ml" value={customWater} onChange={(e) => setCustomWater(e.target.value)} className="w-28" />
+                      <Button size="sm" onClick={() => { addWater(Number(customWater) || 0); setCustomWater(""); setShowCustomWater(false); }}>Add</Button>
+                    </div>
+                  )}
                 </div>
+
+                {/* Remove buttons */}
+                <div>
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Remove Water</p>
+                  <div className="flex flex-wrap gap-2">
+                    <Button size="sm" variant="outline" className="text-destructive border-destructive/30" onClick={() => removeWater(250)}><Minus className="w-3 h-3 mr-1" />250ml</Button>
+                    <Button size="sm" variant="outline" className="text-destructive border-destructive/30" onClick={() => removeWater(500)}><Minus className="w-3 h-3 mr-1" />500ml</Button>
+                    <Button size="sm" variant="outline" className="text-destructive border-destructive/30" onClick={() => setShowCustomWaterRemove(!showCustomWaterRemove)}><Minus className="w-3 h-3 mr-1" />Custom</Button>
+                  </div>
+                  {showCustomWaterRemove && (
+                    <div className="flex gap-2 mt-2">
+                      <Input type="number" placeholder="ml" value={customWaterRemove} onChange={(e) => setCustomWaterRemove(e.target.value)} className="w-28" />
+                      <Button size="sm" variant="destructive" onClick={() => { removeWater(Number(customWaterRemove) || 0); setCustomWaterRemove(""); setShowCustomWaterRemove(false); }}>Remove</Button>
+                    </div>
+                  )}
+                </div>
+
                 {waterPercent >= 100 && (
                   <p className="text-center text-success font-medium">🎉 Goal reached! Great hydration!</p>
                 )}
               </CardContent>
             </Card>
 
-            {/* Recent entries */}
             {waterLogs.length > 0 && (
               <Card>
                 <CardHeader><CardTitle className="text-sm">Recent</CardTitle></CardHeader>
@@ -202,7 +273,7 @@ export default function Tracking() {
                   {waterLogs.slice(0, 5).map((l) => (
                     <div key={l.id} className="flex justify-between text-sm">
                       <span className="text-muted-foreground">{new Date(l.logged_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
-                      <span className="font-medium text-foreground">{l.amount_ml}ml</span>
+                      <span className={`font-medium ${l.amount_ml < 0 ? "text-destructive" : "text-foreground"}`}>{l.amount_ml > 0 ? "+" : ""}{l.amount_ml}ml</span>
                     </div>
                   ))}
                 </CardContent>
@@ -210,18 +281,52 @@ export default function Tracking() {
             )}
           </TabsContent>
 
-          {/* CALORIES BURNED */}
+          {/* CALORIES */}
           <TabsContent value="calories" className="space-y-4 mt-4">
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center justify-between">
-                  <span className="flex items-center gap-2 text-lg"><Flame className="w-5 h-5 text-destructive" /> Calories Burned</span>
+                  <span className="flex items-center gap-2 text-lg"><Flame className="w-5 h-5 text-destructive" /> Calories Tracking</span>
                   <GoalEditor label="Daily goal" value={calorieGoal} unit="kcal" onSave={(v) => updateGoal("daily_calorie_goal", v)} />
                 </CardTitle>
               </CardHeader>
-              <CardContent>
-                <p className="text-4xl font-bold text-center text-foreground">{todayCaloriesBurned}<span className="text-lg text-muted-foreground"> kcal</span></p>
-                <p className="text-sm text-center text-muted-foreground mt-1">Auto-calculated from workouts</p>
+              <CardContent className="space-y-4">
+                <div className="text-center">
+                  <p className="text-4xl font-bold text-foreground">{todayCaloriesBurned + todayCaloriesIn}<span className="text-lg text-muted-foreground"> kcal</span></p>
+                  <p className="text-sm text-muted-foreground mt-1">Workout burn: {todayCaloriesBurned} kcal · Intake: {todayCaloriesIn} kcal</p>
+                </div>
+
+                {/* Add buttons */}
+                <div>
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Add Calories</p>
+                  <div className="flex flex-wrap gap-2">
+                    <Button size="sm" variant="outline" onClick={() => addManualCalories(100)}><Plus className="w-3 h-3 mr-1" />100 kcal</Button>
+                    <Button size="sm" variant="outline" onClick={() => addManualCalories(250)}><Plus className="w-3 h-3 mr-1" />250 kcal</Button>
+                    <Button size="sm" variant="outline" onClick={() => setShowCustomCalorie(!showCustomCalorie)}><Plus className="w-3 h-3 mr-1" />Custom</Button>
+                  </div>
+                  {showCustomCalorie && (
+                    <div className="flex gap-2 mt-2">
+                      <Input type="number" placeholder="kcal" value={customCalorie} onChange={(e) => setCustomCalorie(e.target.value)} className="w-28" />
+                      <Button size="sm" onClick={() => { addManualCalories(Number(customCalorie) || 0); setCustomCalorie(""); setShowCustomCalorie(false); }}>Add</Button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Remove buttons */}
+                <div>
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Remove Calories</p>
+                  <div className="flex flex-wrap gap-2">
+                    <Button size="sm" variant="outline" className="text-destructive border-destructive/30" onClick={() => removeManualCalories(100)}><Minus className="w-3 h-3 mr-1" />100 kcal</Button>
+                    <Button size="sm" variant="outline" className="text-destructive border-destructive/30" onClick={() => removeManualCalories(250)}><Minus className="w-3 h-3 mr-1" />250 kcal</Button>
+                    <Button size="sm" variant="outline" className="text-destructive border-destructive/30" onClick={() => setShowCustomCalorieRemove(!showCustomCalorieRemove)}><Minus className="w-3 h-3 mr-1" />Custom</Button>
+                  </div>
+                  {showCustomCalorieRemove && (
+                    <div className="flex gap-2 mt-2">
+                      <Input type="number" placeholder="kcal" value={customCalorieRemove} onChange={(e) => setCustomCalorieRemove(e.target.value)} className="w-28" />
+                      <Button size="sm" variant="destructive" onClick={() => { removeManualCalories(Number(customCalorieRemove) || 0); setCustomCalorieRemove(""); setShowCustomCalorieRemove(false); }}>Remove</Button>
+                    </div>
+                  )}
+                </div>
               </CardContent>
             </Card>
 
@@ -277,7 +382,6 @@ export default function Tracking() {
               </CardContent>
             </Card>
 
-            {/* Food form */}
             {showFoodForm && (
               <Card>
                 <CardHeader>
@@ -299,7 +403,6 @@ export default function Tracking() {
               </Card>
             )}
 
-            {/* Food list */}
             {foodLogs.length > 0 && (
               <Card>
                 <CardHeader><CardTitle className="text-sm">Today's Food</CardTitle></CardHeader>
