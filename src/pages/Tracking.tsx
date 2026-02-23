@@ -9,9 +9,10 @@ import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Droplets, Flame, Apple, Plus, Trash2, Dumbbell,
-  Home, BarChart3, LogOut, Crown, X,
+  Home, BarChart3, LogOut, Crown, X, Settings2,
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import GoalEditor from "@/components/GoalEditor";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, PieChart, Pie, Cell,
@@ -30,6 +31,8 @@ export default function Tracking() {
   const [workoutLogs, setWorkoutLogs] = useState<WorkoutLog[]>([]);
   const [showFoodForm, setShowFoodForm] = useState(false);
   const [foodForm, setFoodForm] = useState({ food_name: "", calories: "", protein_g: "", carbs_g: "", fat_g: "" });
+  const [waterGoal, setWaterGoal] = useState(2500);
+  const [calorieGoal, setCalorieGoal] = useState(2000);
 
   useEffect(() => {
     if (!authLoading && !user) navigate("/auth", { replace: true });
@@ -41,22 +44,35 @@ export default function Tracking() {
 
   const fetchAll = async () => {
     if (!user) return;
-    const [w, f, wk] = await Promise.all([
+    const [w, f, wk, profileRes] = await Promise.all([
       supabase.from("water_logs").select("id, amount_ml, logged_at").eq("user_id", user.id).gte("logged_at", todayISO).order("logged_at", { ascending: false }),
       supabase.from("food_logs").select("id, food_name, calories, protein_g, carbs_g, fat_g, logged_at").eq("user_id", user.id).gte("logged_at", todayISO).order("logged_at", { ascending: false }),
       supabase.from("workout_logs").select("id, calories_burned, total_minutes, logged_at").eq("user_id", user.id).gte("logged_at", new Date(Date.now() - 7 * 86400000).toISOString()).order("logged_at", { ascending: true }),
+      supabase.from("profiles").select("daily_water_goal, daily_calorie_goal").eq("user_id", user.id).single(),
     ]);
     if (w.data) setWaterLogs(w.data);
     if (f.data) setFoodLogs(f.data);
     if (wk.data) setWorkoutLogs(wk.data);
+    if (profileRes.data) {
+      setWaterGoal((profileRes.data as any).daily_water_goal ?? 2500);
+      setCalorieGoal((profileRes.data as any).daily_calorie_goal ?? 2000);
+    }
   };
 
   useEffect(() => { fetchAll(); }, [user]);
 
   // Water
   const todayWater = waterLogs.reduce((s, l) => s + l.amount_ml, 0);
-  const waterGoal = 2500;
   const waterPercent = Math.min(100, (todayWater / waterGoal) * 100);
+
+  const updateGoal = async (field: string, value: number) => {
+    if (!user) return;
+    const { error } = await supabase.from("profiles").update({ [field]: value }).eq("user_id", user.id);
+    if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); return; }
+    if (field === "daily_water_goal") setWaterGoal(value);
+    if (field === "daily_calorie_goal") setCalorieGoal(value);
+    toast({ title: "Goal updated ✅" });
+  };
 
   const addWater = async (ml: number) => {
     if (!user) return;
@@ -155,8 +171,9 @@ export default function Tracking() {
           <TabsContent value="water" className="space-y-4 mt-4">
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-lg">
-                  <Droplets className="w-5 h-5 text-accent" /> Daily Water Intake
+                <CardTitle className="flex items-center justify-between">
+                  <span className="flex items-center gap-2 text-lg"><Droplets className="w-5 h-5 text-accent" /> Daily Water Intake</span>
+                  <GoalEditor label="Goal" value={waterGoal} unit="ml" onSave={(v) => updateGoal("daily_water_goal", v)} />
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -197,8 +214,9 @@ export default function Tracking() {
           <TabsContent value="calories" className="space-y-4 mt-4">
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-lg">
-                  <Flame className="w-5 h-5 text-destructive" /> Calories Burned Today
+                <CardTitle className="flex items-center justify-between">
+                  <span className="flex items-center gap-2 text-lg"><Flame className="w-5 h-5 text-destructive" /> Calories Burned</span>
+                  <GoalEditor label="Daily goal" value={calorieGoal} unit="kcal" onSave={(v) => updateGoal("daily_calorie_goal", v)} />
                 </CardTitle>
               </CardHeader>
               <CardContent>

@@ -13,6 +13,7 @@ import { toast } from "@/hooks/use-toast";
 import StreakCard from "@/components/StreakCard";
 import LevelProgress, { getLevelInfo } from "@/components/LevelProgress";
 import ShareableWorkoutCard from "@/components/ShareableWorkoutCard";
+import GoalEditor from "@/components/GoalEditor";
 
 interface Profile {
   display_name: string | null;
@@ -23,6 +24,8 @@ interface Profile {
   consistency_score: number;
   total_calories_burned: number;
   total_workouts: number;
+  daily_water_goal: number;
+  daily_calorie_goal: number;
 }
 
 interface RecentWorkout {
@@ -53,7 +56,7 @@ export default function Dashboard() {
     const fetchData = async () => {
       const { data: p } = await supabase
         .from("profiles")
-        .select("display_name, is_premium, workout_streak, water_streak, xp_points, consistency_score, total_calories_burned, total_workouts")
+        .select("display_name, is_premium, workout_streak, water_streak, xp_points, consistency_score, total_calories_burned, total_workouts, daily_water_goal, daily_calorie_goal")
         .eq("user_id", user.id)
         .single();
       if (p) setProfile(p as Profile);
@@ -88,8 +91,16 @@ export default function Dashboard() {
     }
   };
 
-  const waterGoal = 2500;
+  const waterGoal = profile?.daily_water_goal ?? 2500;
   const waterPercent = Math.min(100, (todayWater / waterGoal) * 100);
+
+  const updateGoal = async (field: string, value: number) => {
+    if (!user) return;
+    const { error } = await supabase.from("profiles").update({ [field]: value }).eq("user_id", user.id);
+    if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); return; }
+    setProfile((prev) => prev ? { ...prev, [field]: value } : prev);
+    toast({ title: "Goal updated ✅" });
+  };
 
   const levelInfo = getLevelInfo(profile?.xp_points ?? 0);
   const level = levelInfo.currentLevel.name;
@@ -204,8 +215,9 @@ export default function Dashboard() {
         {/* Water Intake */}
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <Droplets className="w-5 h-5 text-accent" /> Water Intake
+            <CardTitle className="flex items-center justify-between">
+              <span className="flex items-center gap-2 text-lg"><Droplets className="w-5 h-5 text-accent" /> Water Intake</span>
+              <GoalEditor label="Goal" value={waterGoal} unit="ml" onSave={(v) => updateGoal("daily_water_goal", v)} />
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">

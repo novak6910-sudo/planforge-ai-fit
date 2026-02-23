@@ -53,6 +53,8 @@ export type Database = {
           avatar_url: string | null
           consistency_score: number
           created_at: string
+          daily_calorie_goal: number
+          daily_water_goal: number
           display_name: string | null
           downloads_used: number
           experience_level: string | null
@@ -76,6 +78,8 @@ export type Database = {
           avatar_url?: string | null
           consistency_score?: number
           created_at?: string
+          daily_calorie_goal?: number
+          daily_water_goal?: number
           display_name?: string | null
           downloads_used?: number
           experience_level?: string | null
@@ -99,6 +103,8 @@ export type Database = {
           avatar_url?: string | null
           consistency_score?: number
           created_at?: string
+          daily_calorie_goal?: number
+          daily_water_goal?: number
           display_name?: string | null
           downloads_used?: number
           experience_level?: string | null
