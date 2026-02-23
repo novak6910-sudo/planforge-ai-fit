@@ -7,9 +7,12 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import {
   Dumbbell, Droplets, Flame, Crown, LogOut, Home,
-  FileText, BarChart3, Target, TrendingUp, Zap,
+  FileText, BarChart3, Target, TrendingUp, Zap, Activity,
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import StreakCard from "@/components/StreakCard";
+import LevelProgress, { getLevelInfo } from "@/components/LevelProgress";
+import ShareableWorkoutCard from "@/components/ShareableWorkoutCard";
 
 interface Profile {
   display_name: string | null;
@@ -17,6 +20,18 @@ interface Profile {
   workout_streak: number;
   water_streak: number;
   xp_points: number;
+  consistency_score: number;
+  total_calories_burned: number;
+  total_workouts: number;
+}
+
+interface RecentWorkout {
+  id: string;
+  day_focus: string | null;
+  completed_exercises: string[];
+  total_minutes: number;
+  calories_burned: number;
+  logged_at: string;
 }
 
 export default function Dashboard() {
@@ -26,6 +41,7 @@ export default function Dashboard() {
   const [todayWater, setTodayWater] = useState(0);
   const [todayCalories, setTodayCalories] = useState(0);
   const [totalWorkouts, setTotalWorkouts] = useState(0);
+  const [lastWorkout, setLastWorkout] = useState<RecentWorkout | null>(null);
 
   useEffect(() => {
     if (!authLoading && !user) navigate("/auth", { replace: true });
@@ -35,40 +51,27 @@ export default function Dashboard() {
     if (!user) return;
 
     const fetchData = async () => {
-      // Fetch profile
       const { data: p } = await supabase
         .from("profiles")
-        .select("display_name, is_premium, workout_streak, water_streak, xp_points")
+        .select("display_name, is_premium, workout_streak, water_streak, xp_points, consistency_score, total_calories_burned, total_workouts")
         .eq("user_id", user.id)
         .single();
-      if (p) setProfile(p);
+      if (p) setProfile(p as Profile);
 
-      // Fetch today's water
       const todayStart = new Date();
       todayStart.setHours(0, 0, 0, 0);
-      const { data: waterData } = await supabase
-        .from("water_logs")
-        .select("amount_ml")
-        .eq("user_id", user.id)
-        .gte("logged_at", todayStart.toISOString());
-      if (waterData) setTodayWater(waterData.reduce((s, w) => s + w.amount_ml, 0));
 
-      // Fetch today's workouts
-      const { data: workoutData } = await supabase
-        .from("workout_logs")
-        .select("calories_burned")
-        .eq("user_id", user.id)
-        .gte("logged_at", todayStart.toISOString());
-      if (workoutData) {
-        setTodayCalories(workoutData.reduce((s, w) => s + w.calories_burned, 0));
-      }
+      const [waterRes, workoutRes, countRes, lastRes] = await Promise.all([
+        supabase.from("water_logs").select("amount_ml").eq("user_id", user.id).gte("logged_at", todayStart.toISOString()),
+        supabase.from("workout_logs").select("calories_burned").eq("user_id", user.id).gte("logged_at", todayStart.toISOString()),
+        supabase.from("workout_logs").select("id", { count: "exact", head: true }).eq("user_id", user.id),
+        supabase.from("workout_logs").select("id, day_focus, completed_exercises, total_minutes, calories_burned, logged_at").eq("user_id", user.id).order("logged_at", { ascending: false }).limit(1),
+      ]);
 
-      // Total workouts
-      const { count } = await supabase
-        .from("workout_logs")
-        .select("id", { count: "exact", head: true })
-        .eq("user_id", user.id);
-      setTotalWorkouts(count ?? 0);
+      if (waterRes.data) setTodayWater(waterRes.data.reduce((s, w) => s + w.amount_ml, 0));
+      if (workoutRes.data) setTodayCalories(workoutRes.data.reduce((s, w) => s + w.calories_burned, 0));
+      setTotalWorkouts(countRes.count ?? 0);
+      if (lastRes.data?.[0]) setLastWorkout(lastRes.data[0] as RecentWorkout);
     };
 
     fetchData();
@@ -88,9 +91,8 @@ export default function Dashboard() {
   const waterGoal = 2500;
   const waterPercent = Math.min(100, (todayWater / waterGoal) * 100);
 
-  const level = profile?.xp_points
-    ? profile.xp_points >= 5000 ? "Elite" : profile.xp_points >= 2000 ? "Advanced" : profile.xp_points >= 500 ? "Intermediate" : "Beginner"
-    : "Beginner";
+  const levelInfo = getLevelInfo(profile?.xp_points ?? 0);
+  const level = levelInfo.currentLevel.name;
 
   if (authLoading) {
     return <div className="min-h-screen flex items-center justify-center bg-background"><p className="text-muted-foreground">Loading...</p></div>;
@@ -105,9 +107,12 @@ export default function Dashboard() {
             <Dumbbell className="w-6 h-6 text-primary" />
             <span className="font-bold text-lg text-foreground">GymPlanner</span>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
             <Button variant="ghost" size="sm" onClick={() => navigate("/")}>
               <Home className="w-4 h-4 mr-1" /> <span className="hidden sm:inline">Home</span>
+            </Button>
+            <Button variant="ghost" size="sm" onClick={() => navigate("/tracking")}>
+              <Activity className="w-4 h-4 mr-1" /> <span className="hidden sm:inline">Tracking</span>
             </Button>
             <Button variant="ghost" size="sm" onClick={() => { signOut(); navigate("/"); }}>
               <LogOut className="w-4 h-4 mr-1" /> <span className="hidden sm:inline">Logout</span>
@@ -124,7 +129,7 @@ export default function Dashboard() {
               Hey, {profile?.display_name || "Athlete"} 👋
             </h1>
             <p className="text-muted-foreground text-sm flex items-center gap-2 mt-1">
-              <Zap className="w-4 h-4 text-primary" /> Level: {level}
+              <span className="text-lg">{levelInfo.currentLevel.icon}</span> {level}
               {profile?.is_premium && (
                 <span className="ml-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-premium/20 text-premium text-xs font-medium">
                   <Crown className="w-3 h-3" /> Pro
@@ -170,6 +175,31 @@ export default function Dashboard() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Streaks & Level */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <StreakCard
+            workoutStreak={profile?.workout_streak ?? 0}
+            waterStreak={profile?.water_streak ?? 0}
+            consistencyScore={profile?.consistency_score ?? 0}
+          />
+          <LevelProgress xpPoints={profile?.xp_points ?? 0} />
+        </div>
+
+        {/* Last Workout Shareable Card */}
+        {lastWorkout && (
+          <div>
+            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">Last Workout</h2>
+            <ShareableWorkoutCard
+              dayFocus={lastWorkout.day_focus || "Workout"}
+              exerciseCount={lastWorkout.completed_exercises.length}
+              caloriesBurned={lastWorkout.calories_burned}
+              totalMinutes={lastWorkout.total_minutes}
+              userName={profile?.display_name || "Athlete"}
+              level={level}
+            />
+          </div>
+        )}
 
         {/* Water Intake */}
         <Card>

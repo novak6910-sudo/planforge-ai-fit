@@ -51,6 +51,7 @@ export type Database = {
         Row: {
           age: number | null
           avatar_url: string | null
+          consistency_score: number
           created_at: string
           display_name: string | null
           downloads_used: number
@@ -59,6 +60,10 @@ export type Database = {
           height: number | null
           id: string
           is_premium: boolean
+          last_water_date: string | null
+          last_workout_date: string | null
+          total_calories_burned: number
+          total_workouts: number
           updated_at: string
           user_id: string
           water_streak: number
@@ -69,6 +74,7 @@ export type Database = {
         Insert: {
           age?: number | null
           avatar_url?: string | null
+          consistency_score?: number
           created_at?: string
           display_name?: string | null
           downloads_used?: number
@@ -77,6 +83,10 @@ export type Database = {
           height?: number | null
           id?: string
           is_premium?: boolean
+          last_water_date?: string | null
+          last_workout_date?: string | null
+          total_calories_burned?: number
+          total_workouts?: number
           updated_at?: string
           user_id: string
           water_streak?: number
@@ -87,6 +97,7 @@ export type Database = {
         Update: {
           age?: number | null
           avatar_url?: string | null
+          consistency_score?: number
           created_at?: string
           display_name?: string | null
           downloads_used?: number
@@ -95,6 +106,10 @@ export type Database = {
           height?: number | null
           id?: string
           is_premium?: boolean
+          last_water_date?: string | null
+          last_workout_date?: string | null
+          total_calories_burned?: number
+          total_workouts?: number
           updated_at?: string
           user_id?: string
           water_streak?: number
