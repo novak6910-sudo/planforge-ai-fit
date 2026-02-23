@@ -1,4 +1,6 @@
-import { Dumbbell, BarChart3, FileText, Crown } from "lucide-react";
+import { Dumbbell, BarChart3, FileText, Crown, LogIn } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
 
 interface NavbarProps {
   currentView: string;
@@ -7,6 +9,8 @@ interface NavbarProps {
 }
 
 export default function Navbar({ currentView, onNavigate, isPaid }: NavbarProps) {
+  const navigate = useNavigate();
+  const { user } = useAuth();
   const links = [
     { id: "home", label: "Home", icon: Dumbbell },
     { id: "plan", label: "My Plan", icon: FileText },
@@ -50,6 +54,23 @@ export default function Navbar({ currentView, onNavigate, isPaid }: NavbarProps)
             <Crown className="w-4 h-4 inline mr-1" />
             <span className="hidden sm:inline">{isPaid ? "Pro" : "Upgrade"}</span>
           </button>
+          {!user && (
+            <button
+              onClick={() => navigate("/auth")}
+              className="ml-2 px-4 py-2 rounded-lg text-sm font-medium bg-secondary text-secondary-foreground hover:bg-secondary/80 transition-colors"
+            >
+              <LogIn className="w-4 h-4 inline mr-1" />
+              <span className="hidden sm:inline">Login</span>
+            </button>
+          )}
+          {user && (
+            <button
+              onClick={() => navigate("/dashboard")}
+              className="ml-2 px-4 py-2 rounded-lg text-sm font-medium bg-secondary text-secondary-foreground hover:bg-secondary/80 transition-colors"
+            >
+              <span className="hidden sm:inline">Dashboard</span>
+            </button>
+          )}
         </div>
       </div>
     </nav>
