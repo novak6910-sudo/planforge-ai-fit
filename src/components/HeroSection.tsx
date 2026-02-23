@@ -60,10 +60,10 @@ export default function HeroSection({ onGetStarted }: HeroSectionProps) {
             </Button>
             <Button
               size="lg"
-              variant="outline"
-              className="text-lg px-8 py-6 rounded-xl border-primary-foreground/20 text-primary-foreground hover:bg-primary-foreground/10"
+              variant="secondary"
+              className="text-lg px-8 py-6 rounded-xl bg-primary-foreground text-primary font-bold shadow-lg hover:bg-primary-foreground/90 hover:-translate-y-0.5 transition-all"
             >
-              View Demo
+              🎬 View Demo
             </Button>
           </div>
         </motion.div>

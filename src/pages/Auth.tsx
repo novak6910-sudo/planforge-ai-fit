@@ -73,9 +73,14 @@ export default function Auth() {
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <button onClick={() => navigate("/")} className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground mb-4 text-sm">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => navigate("/")}
+            className="mb-6 gap-2"
+          >
             <ArrowLeft className="w-4 h-4" /> Back to Home
-          </button>
+          </Button>
           <div className="flex items-center justify-center gap-2 mb-2">
             <Dumbbell className="w-8 h-8 text-primary" />
             <h1 className="text-2xl font-bold text-foreground">GymPlanner</h1>
