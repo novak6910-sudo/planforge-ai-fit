@@ -1,23 +1,39 @@
-export default function App() {
-  return (
-    <div style={{ padding: '40px', fontFamily: 'system-ui, sans-serif' }}>
-      <h1>GymPlanner</h1>
-      <p>Your fitness tracking app</p>
-      <form style={{ marginTop: '20px' }}>
-        <div style={{ marginBottom: '10px' }}>
-          <label>Exercise: </label>
-          <input type="text" placeholder="e.g., Bench Press" />
-        </div>
-        <div style={{ marginBottom: '10px' }}>
-          <label>Reps: </label>
-          <input type="number" placeholder="10" />
-        </div>
-        <div style={{ marginBottom: '10px' }}>
-          <label>Weight (lbs): </label>
-          <input type="number" placeholder="225" />
-        </div>
-        <button type="submit" style={{ padding: '10px 20px', cursor: 'pointer' }}>Log Workout</button>
-      </form>
-    </div>
-  );
-}
+import { Toaster } from "@/components/ui/toaster";
+import { Toaster as Sonner } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { AuthProvider } from "@/hooks/useAuth";
+import Index from "./pages/Index";
+import Auth from "./pages/Auth";
+import Dashboard from "./pages/Dashboard";
+import Tracking from "./pages/Tracking";
+import Analytics from "./pages/Analytics";
+import ResetPassword from "./pages/ResetPassword";
+import NotFound from "./pages/NotFound";
+
+const queryClient = new QueryClient();
+
+const App = () => (
+  <QueryClientProvider client={queryClient}>
+    <AuthProvider>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/auth" element={<Auth />} />
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/tracking" element={<Tracking />} />
+            <Route path="/analytics" element={<Analytics />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+      </TooltipProvider>
+    </AuthProvider>
+  </QueryClientProvider>
+);
+
+export default App;

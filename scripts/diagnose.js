@@ -1,14 +1,19 @@
 import { execSync } from "child_process";
 import { existsSync, readdirSync } from "fs";
 import path from "path";
+import { fileURLToPath } from "url";
 
-const root = "/vercel/share/v0-project";
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const root = path.resolve(__dirname, "..");
 
 console.log("=== NODE VERSION ===");
 console.log(process.version);
 
+console.log("\n=== PROJECT ROOT ===");
+console.log(root);
+
 console.log("\n=== ROOT FILES ===");
-console.log(readdirSync(root).join("\n"));
+try { console.log(readdirSync(root).join("\n")); } catch(e) { console.log("ERROR:", e.message); }
 
 console.log("\n=== CHECKING KEY PACKAGES ===");
 const packages = [
@@ -25,14 +30,14 @@ for (const pkg of packages) {
 
 console.log("\n=== TRYING VITE BUILD ===");
 try {
-  const output = execSync("cd /vercel/share/v0-project && npx vite build 2>&1", {
+  const output = execSync("npx vite build 2>&1", {
+    cwd: root,
     timeout: 60000,
     encoding: "utf8",
   });
   console.log(output);
 } catch (err) {
-  console.log("BUILD ERROR:");
-  console.log(err.stdout || "");
-  console.log(err.stderr || "");
-  console.log(err.message || "");
+  console.log("BUILD STDOUT:", err.stdout || "(empty)");
+  console.log("BUILD STDERR:", err.stderr || "(empty)");
+  console.log("EXIT CODE:", err.status);
 }
