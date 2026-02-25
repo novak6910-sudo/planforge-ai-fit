@@ -16,5 +16,13 @@ export default defineConfig(({ mode }) => ({
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
+    extensions: [".ts", ".tsx", ".js", ".jsx"],
+  },
+  build: {
+    target: "esnext",
+    minify: "esbuild",
+  },
+  optimizeDeps: {
+    exclude: ["@lovable.dev/cloud-auth-js", "next-themes"],
   },
 }));
