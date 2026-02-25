@@ -1,163 +1,40 @@
-import { useState, useCallback } from "react";
+import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import Navbar from "@/components/Navbar";
 import HeroSection from "@/components/HeroSection";
-import PlannerForm from "@/components/PlannerForm";
-import WorkoutPlanView from "@/components/WorkoutPlanView";
-import WorkoutSession from "@/components/WorkoutSession";
-import ProgressDashboard from "@/components/ProgressDashboard";
-import {
-  generateWorkoutPlan,
-  type UserProfile,
-  type WorkoutPlan,
-  type WorkoutDay,
-  type WorkoutLog,
-} from "@/lib/workout-data";
-import { toast } from "@/hooks/use-toast";
-
-type View = "home" | "plan" | "workout" | "progress" | "upgrade";
+import { Button } from "@/components/ui/button";
+import { Dumbbell } from "lucide-react";
 
 const Index = () => {
-  const { user } = useAuth();
-  const [view, setView] = useState<View>("home");
-  const [plan, setPlan] = useState<WorkoutPlan | null>(null);
-  const [activeDay, setActiveDay] = useState<WorkoutDay | null>(null);
-  const [logs, setLogs] = useState<WorkoutLog[]>([]);
-  const [isPaid, setIsPaid] = useState(false);
-  const [userWeight, setUserWeight] = useState(70);
-  const [downloadsLeft, setDownloadsLeft] = useState(2);
+  const { user, loading } = useAuth();
+  const navigate = useNavigate();
 
-  const handleGenerate = useCallback((profile: UserProfile) => {
-    setUserWeight(profile.weight);
-    const newPlan = generateWorkoutPlan(profile);
-    setPlan(newPlan);
-    setView("plan");
-    toast({
-      title: "Plan Generated! 🎯",
-      description: `${newPlan.daysPerWeek}-day ${newPlan.goal} plan created for you.`,
-    });
-  }, []);
+  useEffect(() => {
+    if (!loading && user) navigate("/dashboard", { replace: true });
+  }, [user, loading, navigate]);
 
-  const handleStartWorkout = useCallback((day: WorkoutDay) => {
-    setActiveDay(day);
-    setView("workout");
-  }, []);
-
-  const handleFinishWorkout = useCallback(
-    (result: {
-      completedExercises: string[];
-      totalMinutes: number;
-      caloriesBurned: number;
-      waterMl: number;
-    }) => {
-      const log: WorkoutLog = {
-        date: new Date().toISOString(),
-        dayId: activeDay?.id || "",
-        completedExercises: result.completedExercises,
-        totalMinutes: result.totalMinutes,
-        caloriesBurned: result.caloriesBurned,
-        waterMl: result.waterMl,
-        notes: "",
-      };
-      setLogs((prev) => [...prev, log]);
-      setView("progress");
-      toast({
-        title: "Workout Complete! 🎉",
-        description: `${result.completedExercises.length} exercises done · ${result.caloriesBurned} cal burned`,
-      });
-    },
-    [activeDay]
-  );
-
-  const handleDownload = useCallback(() => {
-    if (!isPaid && downloadsLeft <= 0) {
-      toast({
-        title: "No downloads left",
-        description: "Upgrade to Pro for unlimited downloads, or watch an ad to unlock one.",
-        variant: "destructive",
-      });
-      return;
-    }
-    if (!isPaid) {
-      setDownloadsLeft((d) => d - 1);
-      toast({
-        title: "PDF Downloaded 📄",
-        description: `${downloadsLeft - 1} free download(s) remaining this month.`,
-      });
-    } else {
-      toast({
-        title: "PDF Downloaded 📄",
-        description: "Your workout plan has been saved.",
-      });
-    }
-  }, [isPaid, downloadsLeft]);
-
-  const handleNavigate = useCallback((target: string) => {
-    if (target === "upgrade") {
-      setIsPaid((p) => !p);
-      toast({
-        title: isPaid ? "Switched to Free" : "Upgraded to Pro! 👑",
-        description: isPaid
-          ? "You are now on the free plan."
-          : "Enjoy unlimited downloads & all exercises.",
-      });
-      return;
-    }
-    setView(target as View);
-  }, [isPaid]);
-
-  const scrollToPlanner = useCallback(() => {
-    setView("home");
-    setTimeout(() => {
-      document.getElementById("planner")?.scrollIntoView({ behavior: "smooth" });
-    }, 100);
-  }, []);
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <p className="text-muted-foreground">Loading...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
-      <Navbar currentView={view} onNavigate={handleNavigate} isPaid={isPaid} />
-
-      {view === "home" && (
-        <>
-          {!user && <HeroSection onGetStarted={scrollToPlanner} />}
-          <PlannerForm onGenerate={handleGenerate} />
-        </>
-      )}
-
-      {view === "plan" && plan && (
-        <WorkoutPlanView
-          plan={plan}
-          isPaid={isPaid}
-          onPlanChange={setPlan}
-          onStartWorkout={handleStartWorkout}
-          onDownload={handleDownload}
-        />
-      )}
-
-      {view === "plan" && !plan && (
-        <div className="py-20 text-center">
-          <p className="text-muted-foreground text-lg mb-4">
-            No plan generated yet.
-          </p>
-          <button
-            onClick={() => setView("home")}
-            className="text-primary font-semibold underline"
-          >
-            Go to planner →
-          </button>
+      <nav className="sticky top-0 z-50 glass border-b border-border/50">
+        <div className="max-w-lg mx-auto px-6 flex items-center justify-between h-14">
+          <div className="flex items-center gap-2">
+            <Dumbbell className="w-5 h-5 text-primary" />
+            <span className="font-bold text-foreground">GymPlanner</span>
+          </div>
+          <Button size="sm" onClick={() => navigate("/auth")} className="rounded-xl">
+            Get Started
+          </Button>
         </div>
-      )}
-
-      {view === "workout" && activeDay && (
-        <WorkoutSession
-          day={activeDay}
-          userWeight={userWeight}
-          onFinish={handleFinishWorkout}
-          onBack={() => setView("plan")}
-        />
-      )}
-
-      {view === "progress" && <ProgressDashboard logs={logs} />}
+      </nav>
+      <HeroSection onGetStarted={() => navigate("/auth")} />
     </div>
   );
 };

@@ -2,21 +2,22 @@ import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  Dumbbell, Droplets, Flame, Home, LogOut, TrendingUp, BarChart3, Crown, Lock, Activity,
+  Dumbbell, Droplets, Flame, TrendingUp, Crown,
 } from "lucide-react";
 import {
-  BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, AreaChart, Area,
 } from "recharts";
+import BottomNav from "@/components/BottomNav";
 
 interface DailyData { date: string; label: string; calories: number; water: number; workouts: number }
 
 export default function Analytics() {
-  const { user, signOut, loading: authLoading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const defaultTab = searchParams.get("tab") || "calories";
@@ -36,7 +37,6 @@ export default function Analytics() {
     if (!user) return;
     const fetchData = async () => {
       const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000).toISOString();
-
       const [workoutRes, waterRes, foodRes, profileRes] = await Promise.all([
         supabase.from("workout_logs").select("calories_burned, logged_at").eq("user_id", user.id).gte("logged_at", thirtyDaysAgo),
         supabase.from("water_logs").select("amount_ml, logged_at").eq("user_id", user.id).gte("logged_at", thirtyDaysAgo),
@@ -72,34 +72,14 @@ export default function Analytics() {
   if (authLoading) return <div className="min-h-screen flex items-center justify-center bg-background"><p className="text-muted-foreground">Loading...</p></div>;
 
   return (
-    <div className="min-h-screen bg-background">
-      <nav className="sticky top-0 z-50 glass border-b border-border/50">
-        <div className="max-w-lg mx-auto px-6 flex items-center justify-between h-14">
-          <div className="flex items-center gap-2">
-            <Dumbbell className="w-5 h-5 text-primary" />
-            <span className="font-bold text-foreground">GymPlanner</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <Button variant="ghost" size="icon" onClick={() => navigate("/dashboard")}><Home className="w-4 h-4" /></Button>
-            <Button variant="ghost" size="icon" onClick={() => navigate("/tracking")}><Activity className="w-4 h-4" /></Button>
-            <Button variant="ghost" size="icon" onClick={() => { signOut(); navigate("/"); }}><LogOut className="w-4 h-4" /></Button>
-          </div>
-        </div>
-      </nav>
-
-      <main className="max-w-lg mx-auto px-6 py-6 space-y-6">
+    <div className="min-h-screen bg-background pb-20">
+      <main className="max-w-lg mx-auto px-6 py-8 space-y-6">
         <h1 className="text-2xl font-bold text-foreground">Analytics</h1>
 
-        {/* Range Tabs */}
+        {/* Range */}
         <div className="flex gap-2">
           {(["daily", "weekly", "monthly"] as const).map((r) => (
-            <Button
-              key={r}
-              size="sm"
-              variant={range === r ? "default" : "outline"}
-              className="rounded-xl capitalize"
-              onClick={() => setRange(r)}
-            >
+            <Button key={r} size="sm" variant={range === r ? "default" : "outline"} className="rounded-xl capitalize" onClick={() => setRange(r)}>
               {r}
             </Button>
           ))}
@@ -114,124 +94,89 @@ export default function Analytics() {
           </TabsList>
 
           <TabsContent value="calories" className="mt-4">
-            <Card>
-              <CardContent className="p-4">
-                <h3 className="font-semibold text-foreground text-sm mb-3">🔥 Calories</h3>
-                <div className="h-48">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={chartData}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                      <XAxis dataKey="label" tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" />
-                      <YAxis tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" />
-                      <Tooltip />
-                      <Bar dataKey="calories" fill="hsl(var(--destructive))" radius={[4, 4, 0, 0]} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              </CardContent>
-            </Card>
+            <Card><CardContent className="p-4">
+              <h3 className="font-semibold text-foreground text-sm mb-3">🔥 Calories</h3>
+              <div className="h-48">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={chartData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                    <XAxis dataKey="label" tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" />
+                    <YAxis tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" />
+                    <Tooltip />
+                    <Bar dataKey="calories" fill="hsl(var(--destructive))" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </CardContent></Card>
           </TabsContent>
 
           <TabsContent value="water" className="mt-4">
-            <Card>
-              <CardContent className="p-4">
-                <h3 className="font-semibold text-foreground text-sm mb-3">💧 Water</h3>
-                <div className="h-48">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={chartData}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                      <XAxis dataKey="label" tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" />
-                      <YAxis tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" />
-                      <Tooltip />
-                      <Bar dataKey="water" fill="hsl(var(--accent))" radius={[4, 4, 0, 0]} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              </CardContent>
-            </Card>
+            <Card><CardContent className="p-4">
+              <h3 className="font-semibold text-foreground text-sm mb-3">💧 Water</h3>
+              <div className="h-48">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={chartData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                    <XAxis dataKey="label" tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" />
+                    <YAxis tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" />
+                    <Tooltip />
+                    <Bar dataKey="water" fill="hsl(var(--accent))" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </CardContent></Card>
           </TabsContent>
 
           <TabsContent value="streak" className="mt-4 space-y-4">
             <div className="grid grid-cols-2 gap-3">
-              <Card>
-                <CardContent className="p-5 text-center">
-                  <TrendingUp className="w-10 h-10 text-success mx-auto mb-2" />
-                  <p className="text-3xl font-bold text-foreground">{workoutStreak}</p>
-                  <p className="text-sm text-muted-foreground">🔥 Workout Streak</p>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardContent className="p-5 text-center">
-                  <Droplets className="w-10 h-10 text-accent mx-auto mb-2" />
-                  <p className="text-3xl font-bold text-foreground">{waterStreak}</p>
-                  <p className="text-sm text-muted-foreground">💧 Water Streak</p>
-                </CardContent>
-              </Card>
+              <Card><CardContent className="p-5 text-center">
+                <TrendingUp className="w-10 h-10 text-success mx-auto mb-2" />
+                <p className="text-3xl font-bold text-foreground">{workoutStreak}</p>
+                <p className="text-sm text-muted-foreground">🔥 Workout Streak</p>
+              </CardContent></Card>
+              <Card><CardContent className="p-5 text-center">
+                <Droplets className="w-10 h-10 text-accent mx-auto mb-2" />
+                <p className="text-3xl font-bold text-foreground">{waterStreak}</p>
+                <p className="text-sm text-muted-foreground">💧 Water Streak</p>
+              </CardContent></Card>
             </div>
-            <Card>
-              <CardContent className="p-4">
-                <h3 className="font-semibold text-foreground text-sm mb-3">Daily Workouts</h3>
-                <div className="h-48">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={chartData}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                      <XAxis dataKey="label" tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" />
-                      <YAxis tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" allowDecimals={false} />
-                      <Tooltip />
-                      <Bar dataKey="workouts" fill="hsl(var(--success))" radius={[4, 4, 0, 0]} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              </CardContent>
-            </Card>
           </TabsContent>
 
           <TabsContent value="workouts" className="mt-4">
-            <Card>
-              <CardContent className="p-4">
-                <h3 className="font-semibold text-foreground text-sm mb-3">🏋️ Workout Frequency</h3>
-                <div className="text-center mb-4">
-                  <p className="text-3xl font-bold text-foreground">{totalWorkouts}</p>
-                  <p className="text-sm text-muted-foreground">Total Workouts</p>
-                </div>
-                <div className="h-48">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={chartData}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                      <XAxis dataKey="label" tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" />
-                      <YAxis tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" allowDecimals={false} />
-                      <Tooltip />
-                      <Area type="monotone" dataKey="workouts" fill="hsl(var(--primary) / 0.2)" stroke="hsl(var(--primary))" />
-                    </AreaChart>
-                  </ResponsiveContainer>
-                </div>
-              </CardContent>
-            </Card>
+            <Card><CardContent className="p-4">
+              <div className="text-center mb-4">
+                <p className="text-3xl font-bold text-foreground">{totalWorkouts}</p>
+                <p className="text-sm text-muted-foreground">Total Workouts</p>
+              </div>
+              <div className="h-48">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={chartData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                    <XAxis dataKey="label" tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" />
+                    <YAxis tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" allowDecimals={false} />
+                    <Tooltip />
+                    <Area type="monotone" dataKey="workouts" fill="hsl(var(--primary) / 0.2)" stroke="hsl(var(--primary))" />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            </CardContent></Card>
           </TabsContent>
         </Tabs>
 
-        {/* Premium */}
         {!isPremium && (
           <Card className="border-premium/30 bg-premium/5">
             <CardContent className="p-5 text-center space-y-3">
               <Crown className="w-8 h-8 text-premium mx-auto" />
-              <h3 className="font-bold text-foreground">Unlock Premium</h3>
-              <div className="text-sm text-muted-foreground space-y-1">
-                <p>✔ Unlimited plans & downloads</p>
-                <p>✔ Advanced analytics</p>
-                <p>✔ Smart AI adjustments</p>
-                <p>✔ No ads</p>
-              </div>
-              <div className="flex gap-2 justify-center pt-2">
-                <Button className="bg-premium text-premium-foreground hover:bg-premium/90 rounded-xl">
-                  <Crown className="w-4 h-4 mr-1" /> Upgrade Now
-                </Button>
-                <Button variant="ghost" size="sm" className="text-muted-foreground">Maybe Later</Button>
-              </div>
+              <h3 className="font-bold text-foreground">Advanced Insights</h3>
+              <p className="text-sm text-muted-foreground">Unlock predictive trends and AI progress insights.</p>
+              <Button onClick={() => navigate("/premium")} className="bg-premium text-premium-foreground hover:bg-premium/90 rounded-xl">
+                <Crown className="w-4 h-4 mr-1" /> Upgrade Now
+              </Button>
             </CardContent>
           </Card>
         )}
       </main>
+      <BottomNav />
     </div>
   );
 }

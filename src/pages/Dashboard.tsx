@@ -6,23 +6,20 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import {
-  Dumbbell, Droplets, Flame, Crown, LogOut, Home,
-  FileText, BarChart3, Target, TrendingUp, Activity, Play,
+  Droplets, Flame, Crown, TrendingUp, Target, Play, FileText, BarChart3, Activity,
 } from "lucide-react";
-import { toast } from "@/hooks/use-toast";
+import BottomNav from "@/components/BottomNav";
 
 interface Profile {
   display_name: string | null;
   is_premium: boolean;
   workout_streak: number;
   water_streak: number;
-  xp_points: number;
-  total_workouts: number;
   daily_water_goal: number;
 }
 
 export default function Dashboard() {
-  const { user, signOut, loading: authLoading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [todayWater, setTodayWater] = useState(0);
@@ -40,7 +37,7 @@ export default function Dashboard() {
       todayStart.setHours(0, 0, 0, 0);
 
       const [profileRes, waterRes, workoutRes, countRes] = await Promise.all([
-        supabase.from("profiles").select("display_name, is_premium, workout_streak, water_streak, xp_points, total_workouts, daily_water_goal").eq("user_id", user.id).single(),
+        supabase.from("profiles").select("display_name, is_premium, workout_streak, water_streak, daily_water_goal").eq("user_id", user.id).single(),
         supabase.from("water_logs").select("amount_ml").eq("user_id", user.id).gte("logged_at", todayStart.toISOString()),
         supabase.from("workout_logs").select("calories_burned").eq("user_id", user.id).gte("logged_at", todayStart.toISOString()),
         supabase.from("workout_logs").select("id", { count: "exact", head: true }).eq("user_id", user.id),
@@ -69,21 +66,7 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Nav */}
-      <nav className="sticky top-0 z-50 glass border-b border-border/50">
-        <div className="max-w-lg mx-auto px-6 flex items-center justify-between h-14">
-          <div className="flex items-center gap-2">
-            <Dumbbell className="w-5 h-5 text-primary" />
-            <span className="font-bold text-foreground">GymPlanner</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <Button variant="ghost" size="icon" onClick={() => navigate("/")}><Home className="w-4 h-4" /></Button>
-            <Button variant="ghost" size="icon" onClick={() => { signOut(); navigate("/"); }}><LogOut className="w-4 h-4" /></Button>
-          </div>
-        </div>
-      </nav>
-
+    <div className="min-h-screen bg-background pb-20">
       <main className="max-w-lg mx-auto px-6 py-8 space-y-6">
         {/* Greeting */}
         <div>
@@ -99,14 +82,14 @@ export default function Dashboard() {
 
         {/* 4 Big Stat Cards */}
         <div className="grid grid-cols-2 gap-3">
-          <Card className="cursor-pointer hover:border-destructive/50 transition-all active:scale-[0.98]" onClick={() => navigate("/analytics?tab=calories")}>
+          <Card className="cursor-pointer hover:border-destructive/50 transition-all active:scale-[0.98]" onClick={() => navigate("/tracking?tab=calories")}>
             <CardContent className="p-5 text-center">
               <Flame className="w-10 h-10 text-destructive mx-auto mb-2" />
               <p className="text-3xl font-bold text-foreground">{todayCalories}</p>
               <p className="text-sm text-muted-foreground mt-1">🔥 Calories Today</p>
             </CardContent>
           </Card>
-          <Card className="cursor-pointer hover:border-accent/50 transition-all active:scale-[0.98]" onClick={() => navigate("/analytics?tab=water")}>
+          <Card className="cursor-pointer hover:border-accent/50 transition-all active:scale-[0.98]" onClick={() => navigate("/tracking?tab=water")}>
             <CardContent className="p-5 text-center">
               <Droplets className="w-10 h-10 text-accent mx-auto mb-2" />
               <p className="text-3xl font-bold text-foreground">{Math.round(waterPercent)}%</p>
@@ -133,7 +116,7 @@ export default function Dashboard() {
         {/* Primary CTA */}
         <Button
           size="lg"
-          onClick={() => navigate("/")}
+          onClick={() => navigate("/create")}
           className="w-full h-14 text-lg rounded-xl gap-2 shadow-lg shadow-primary/20"
         >
           <Play className="w-5 h-5" /> Start Today's Workout
@@ -144,11 +127,11 @@ export default function Dashboard() {
           <Button
             variant="outline"
             size="lg"
-            onClick={() => navigate("/")}
+            onClick={() => navigate("/plans")}
             className="w-full h-12 rounded-xl gap-3 justify-start"
           >
             <FileText className="w-5 h-5 text-primary" />
-            <span className="font-medium">View My Plan</span>
+            <span className="font-medium">My Plans</span>
           </Button>
           <Button
             variant="outline"
@@ -159,18 +142,10 @@ export default function Dashboard() {
             <Activity className="w-5 h-5 text-accent" />
             <span className="font-medium">Open Tracking</span>
           </Button>
-          <Button
-            variant="outline"
-            size="lg"
-            onClick={() => navigate("/analytics")}
-            className="w-full h-12 rounded-xl gap-3 justify-start"
-          >
-            <BarChart3 className="w-5 h-5 text-success" />
-            <span className="font-medium">Analytics</span>
-          </Button>
           {!profile?.is_premium && (
             <Button
               size="lg"
+              onClick={() => navigate("/premium")}
               className="w-full h-12 rounded-xl gap-3 bg-premium text-premium-foreground hover:bg-premium/90"
             >
               <Crown className="w-5 h-5" />
@@ -179,6 +154,7 @@ export default function Dashboard() {
           )}
         </div>
       </main>
+      <BottomNav />
     </div>
   );
 }
