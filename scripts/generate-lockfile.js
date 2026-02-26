@@ -1,16 +1,22 @@
 import { execSync } from "child_process";
 import { existsSync, unlinkSync } from "fs";
-import { resolve, dirname } from "path";
-import { fileURLToPath } from "url";
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const root = resolve(__dirname, "..");
+const root = "/vercel/share/v0-project";
 
 // Remove bun lockfile so npm takes over
-const bunLock = resolve(root, "bun.lockb");
+const bunLock = `${root}/bun.lockb`;
 if (existsSync(bunLock)) {
   unlinkSync(bunLock);
   console.log("Removed bun.lockb");
+} else {
+  console.log("bun.lockb not found, skipping.");
+}
+
+// Remove stale package-lock if present
+const npmLock = `${root}/package-lock.json`;
+if (existsSync(npmLock)) {
+  unlinkSync(npmLock);
+  console.log("Removed stale package-lock.json");
 }
 
 // Generate a fresh package-lock.json
